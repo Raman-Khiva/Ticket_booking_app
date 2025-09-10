@@ -1,4 +1,4 @@
-// store/index.ts
+// store/store.ts
 import { configureStore } from '@reduxjs/toolkit'
 import { TypedUseSelectorHook, useDispatch, useSelector } from 'react-redux'
 import authSlice from '@/store/slices/authSlice'
