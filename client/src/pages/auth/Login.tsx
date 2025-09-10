@@ -1,23 +1,62 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Ticket } from 'lucide-react';
+import { Ticket, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { loginUser, clearError, selectAuth } from '@/store/slices/authSlice';
+import type { AppDispatch } from '@/store/store';
 
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const dispatch = useDispatch<AppDispatch>();
+  const navigate = useNavigate();
+  const { isLoading, error, isAuthenticated } = useSelector(selectAuth);
   const { toast } = useToast();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Clear any existing errors when component mounts
+  useEffect(() => {
+    dispatch(clearError());
+  }, [dispatch]);
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/profile');
+    }
+  }, [isAuthenticated, navigate]);
+
+  // Show error toast when error changes
+  useEffect(() => {
+    if (error) {
+      toast({
+        title: "Login Failed",
+        description: error,
+        variant: "destructive"
+      });
+    }
+  }, [error, toast]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    toast({
-      title: "Login Successful!",
-      description: "You have been logged in successfully.",
-    });
+    
+    try {
+      const result = await dispatch(loginUser({ email, password }));
+      
+      if (loginUser.fulfilled.match(result)) {
+        toast({
+          title: "Login Successful!",
+          description: "Welcome back to EventTix.",
+        });
+        navigate('/profile');
+      }
+    } catch (error) {
+      // Error is handled by the useEffect above
+    }
   };
 
   return (
@@ -41,6 +80,7 @@ const Login = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
+                disabled={isLoading}
               />
             </div>
             
@@ -53,11 +93,19 @@ const Login = () => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
+                disabled={isLoading}
               />
             </div>
 
-            <Button type="submit" className="w-full">
-              Sign In
+            <Button type="submit" className="w-full" disabled={isLoading}>
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Signing In...
+                </>
+              ) : (
+                'Sign In'
+              )}
             </Button>
           </form>
 
